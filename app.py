@@ -66,7 +66,6 @@ except ImportError as e:  # pragma: no cover
 # PASO 1.4 (configuración): traer las clases (usa la función del PASO 2). Si falta el archivo, queda None.
 lib_clases = _cargar_modulo_clases()
 
-
 # ---------------------------------------------------------------------------
 # 2.0 Inicialización de session_state
 # ---------------------------------------------------------------------------
@@ -501,7 +500,7 @@ def _form_kwargs_clase(
             except (TypeError, ValueError):
                 dv = 0.0
             kwargs[pname] = st.number_input(
-                pname, format="%.6f", value=dv, step=0.1, key=key
+                pname, format="%.2f", value=dv, step=0.1, key=key
             )
 
     return kwargs
@@ -553,59 +552,86 @@ def ejercicio4() -> None:
             st.success(f"Registro creado con id={nuevo_id}.")
             st.rerun()
 
-    # Pestaña LEER: ver todo en una tabla
+    # Pestaña LEER: primero elegir clase y luego ver solo esos registros
     with tab_leer:
         st.subheader("Leer registros")
         regs = st.session_state.e4_registros
         if not regs:
             st.info("No hay registros.")
         else:
-            filas = []
-            for r in regs:
-                try:
-                    filas.append({"id": r["id"], "clase": r["clase"], **_resumen_registro(r)})
-                except Exception as ex:  
-                    filas.append({"id": r["id"], "clase": r["clase"], "error": str(ex)})
-            st.dataframe(pd.DataFrame(filas), use_container_width=True, hide_index=True)
+            clase_leer = st.selectbox(
+                "Clase a consultar",
+                list(clases.keys()),
+                key="e4_r_clase",
+            )
+            regs_clase = [r for r in regs if r["clase"] == clase_leer]
+            if not regs_clase:
+                st.info(f"No hay registros para la clase {clase_leer}.")
+            else:
+                filas = []
+                for r in regs_clase:
+                    try:
+                        filas.append({"id": r["id"], "clase": r["clase"], **_resumen_registro(r)})
+                    except Exception as ex:  
+                        filas.append({"id": r["id"], "clase": r["clase"], "error": str(ex)})
+                st.dataframe(pd.DataFrame(filas), use_container_width=True, hide_index=True)
 
-    # Pestaña ACTUALIZAR: elegir un id y guardar cambios en ese registro
+    # Pestaña ACTUALIZAR: primero elegir clase y luego elegir registro por id
     with tab_actualizar:
         st.subheader("Actualizar registro")
         regs = st.session_state.e4_registros
         if not regs:
             st.info("No hay registros para actualizar.")
         else:
-            opciones = {f"id {r['id']} — {r['clase']}": r["id"] for r in regs}
-            label = st.selectbox("Selecciona registro", list(opciones.keys()), key="e4_u_sel")
-            rid = opciones[label]
-            reg = next(r for r in regs if r["id"] == rid)
-            nombre_c = reg["clase"]
-            st.write(f"Editando clase **{nombre_c}** (id **{rid}**).")
-            kwargs = _form_kwargs_clase(
-                nombre_c,
-                clases[nombre_c],
-                key_suffix=f"upd_{rid}",
-                initial=dict(reg["datos"]),
+            clase_actualizar = st.selectbox(
+                "Clase a actualizar",
+                list(clases.keys()),
+                key="e4_u_clase",
             )
-            if st.button("Guardar cambios", key="e4_u_btn") and kwargs is not None:
-                reg["datos"] = kwargs
-                st.success("Registro actualizado.")
-                st.rerun()
+            regs_clase = [r for r in regs if r["clase"] == clase_actualizar]
+            if not regs_clase:
+                st.info(f"No hay registros para la clase {clase_actualizar}.")
+            else:
+                opciones = {f"id {r['id']} — {r['clase']}": r["id"] for r in regs_clase}
+                label = st.selectbox("Selecciona registro", list(opciones.keys()), key="e4_u_sel")
+                rid = opciones[label]
+                reg = next(r for r in regs if r["id"] == rid)
+                nombre_c = reg["clase"]
+                st.write(f"Editando clase **{nombre_c}** (id **{rid}**).")
+                kwargs = _form_kwargs_clase(
+                    nombre_c,
+                    clases[nombre_c],
+                    key_suffix=f"upd_{rid}",
+                    initial=dict(reg["datos"]),
+                )
+                if st.button("Guardar cambios", key="e4_u_btn") and kwargs is not None:
+                    reg["datos"] = kwargs
+                    st.success("Registro actualizado.")
+                    st.rerun()
 
-    # Pestaña ELIMINAR: quitar un registro de la lista
+    # Pestaña ELIMINAR: primero elegir clase y luego eliminar registro
     with tab_eliminar:
         st.subheader("Eliminar registro")
         regs = st.session_state.e4_registros
         if not regs:
             st.info("No hay registros para eliminar.")
         else:
-            opciones = {f"id {r['id']} — {r['clase']}": r["id"] for r in regs}
-            label = st.selectbox("Selecciona registro a eliminar", list(opciones.keys()), key="e4_d_sel")
-            rid = opciones[label]
-            if st.button("Eliminar", key="e4_d_btn"):
-                st.session_state.e4_registros = [r for r in regs if r["id"] != rid]
-                st.success("Registro eliminado.")
-                st.rerun()
+            clase_eliminar = st.selectbox(
+                "Clase a eliminar",
+                list(clases.keys()),
+                key="e4_d_clase",
+            )
+            regs_clase = [r for r in regs if r["clase"] == clase_eliminar]
+            if not regs_clase:
+                st.info(f"No hay registros para la clase {clase_eliminar}.")
+            else:
+                opciones = {f"id {r['id']} — {r['clase']}": r["id"] for r in regs_clase}
+                label = st.selectbox("Selecciona registro a eliminar", list(opciones.keys()), key="e4_d_sel")
+                rid = opciones[label]
+                if st.button("Eliminar", key="e4_d_btn"):
+                    st.session_state.e4_registros = [r for r in regs if r["id"] != rid]
+                    st.success("Registro eliminado.")
+                    st.rerun()
 
 
 # ---------------------------------------------------------------------------
@@ -645,3 +671,4 @@ def main() -> None:
 if __name__ == "__main__":
     # Punto de arranque: en consola suele usarse  streamlit run app.py
     main()
+
