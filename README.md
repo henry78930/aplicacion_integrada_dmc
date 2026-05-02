@@ -12,3 +12,4 @@ Esta aplicación integra ejercicios de listas, NumPy, Pandas, llamadas a funcion
 **NumPy** — Guardar columnas de números (productos)  
 **Streamlit** — La librería que pinta esta página web desde Python  
 
+Link Streamlit: https://aplicacion-integrada-dmc.streamlit.app
